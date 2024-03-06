@@ -1,5 +1,5 @@
 import numpy as np
-from itertools import chain, combinations
+from itertools import combinations
 
 
 def powerset(elements):
@@ -430,7 +430,7 @@ class Representation:
         cov_ps = powerset(self.cover(interval))
 
         # compute V S
-        for c in cov_ps[1::]:
+        for c in cov_ps[1::]: # remove empty set
             if len(c) == 1:
                 tmp = self.get_src_snk(c[0])
                 interval = Interval(tmp[0], tmp[1])
@@ -445,7 +445,52 @@ class Representation:
                 else:
                     repl = repl - self.int_rank(interval)
         return repl
+    
 
+    def list_int(self, conv=True):
+        '''
+        Return the list of all the intervals possible.
+
+        If conv == True, return intervals in the form of convex hulls.
+        If conv == False, return intervals in the form Interval(src, snk).
+        '''
+        nodes = self.nodes
+        candidates = powerset(nodes)[1::] # [1::] to remove the empty interval
+        list_int = []
+        for c in candidates:
+            if self.is_convex(c) and self.is_connected(c):
+                if conv:
+                    list_int.append(c)
+                else:
+                    tmp = self.get_src_snk(c)
+                    list_int.append(Interval(tmp[0], tmp[1]))
+                    if tmp[0] == [(1,2),(2,0)] and tmp[1] == [(1,2),(2,1)]:
+                        print(f'candidate = {c}')
+        return list_int
+    
+    def is_connected(self, points):
+        '''
+        Given some points, check if they are connected. Based of DFS algorithm for undirected graph.
+        '''
+        n = len(points)
+
+        # use DFS to check if all points are reachable from the first point
+        visited = set()
+
+        def dfs(current_node):
+            visited.add(current_node)
+            for neighbor in points:
+                # we do not care about directions so:
+                connected = self.is_smaller(current_node, neighbor) or self.is_smaller(neighbor, current_node)
+                if neighbor not in visited and connected and neighbor != current_node:
+                    dfs(neighbor)
+
+        # start DFS from the first point in the list
+        dfs(points[0])
+
+        # check if all points are visited
+        return all(node in visited for node in points)
+ 
 
     def check_commutativity(self):
         '''
