@@ -1,4 +1,22 @@
 import numpy as np
+from itertools import chain, combinations
+
+
+def powerset(elements):
+    '''
+    Generate all possible subsets of a set of elements.
+    '''
+    all_subsets = []
+    for subset_size in range(len(elements) + 1):
+        all_subsets.extend(combinations(elements, subset_size))
+    return [list(subset) for subset in all_subsets]
+
+# https://stackoverflow.com/questions/952914/how-do-i-make-a-flat-list-out-of-a-list-of-lists
+def flatten(xss):
+    '''
+    Used to flatten a list.
+    '''
+    return [x for xs in xss for x in xs]
 
 
 class Interval:
@@ -92,7 +110,183 @@ class Representation:
             return True
         else:
             return False
+        
+
+    def convex_square(self, node1, node2):
+        '''
+        Given node1 <= node2, generate all points in the square with source node1 and sink node2.
+        For example, convex_square((0,0), (1,1)) = [(0,0), (0,1), (1,0), (1,1)].
+        Used to construct int_hull that returns the convex hull of an interval (sources, sinks).
+        '''
+        if self.is_smaller(node1, node2):
+            points = []
+            for coordinates in self.nodes:
+                if all(node1[i] <= coordinates[i] <= node2[i] for i in range(len(self.dimensions))):
+                    points.append(tuple(coordinates))
+            return points 
+        else:
+            return []
+
+
+    def int_hull(self, interval):
+        '''
+        Given an interval (sources and sinks), return the convex hull.
+        '''
+        points = []
+
+        # strategy : add all points in convex_square(source, sink) for a given source and a given sink, then remove points if needed
+        for src in interval.src:
+            for snk in interval.snk :
+                points = points + self.convex_square(src, snk) 
+        points = list(set(points))
+
+        for new_pt in points: # check if we need to remove points
+            if self.to_be_removed(new_pt, interval):
+                points.remove(new_pt)
+
+        return points
     
+    
+    def is_corner(self, point, interval):
+        '''
+        Check if a point is a corner of an interval.
+        '''
+        for i in range (len(self.dimensions)):
+            aligned = False
+            for src in interval.src:
+                if src[i] == point[i]:
+                    aligned = True
+            for snk in interval.snk:
+                if snk[i] == point[i]:
+                    aligned = True
+            if not aligned:
+                return False
+        return True
+    
+
+    def cover(self, interval, conv=True):
+        '''
+        Return the cover of an interval.
+
+        If conv == True, return intervals in the form of convex hulls.
+        If conv == False, return intervals in the form (src, snk).
+
+        Strategy: for all corner vertices, we check if the interval given when we add the vertex with corner[i] = +- 1 is
+        indeed an interval.
+
+        TO DO: this strategy works for 2D grids, check formally if this intuition scale to higher dimensions.
+        '''
+        cover = [] # list of intervals that are in Cov(I)
+        hull = self.int_hull(interval)
+
+        potential_int = hull.copy()
+        for pt_idx in range(len(potential_int)):
+            if self.is_corner(potential_int[pt_idx], interval):
+                point = list(potential_int[pt_idx])
+                # print(f"the corner considered is {point}")
+                for i in range(len(self.dimensions)):
+                    # print(f"i = {i}")
+                    val = point[i]
+                    if val != self.dimensions[i] - 1: 
+                        # print("val is not max")
+                        point[i] = val + 1 # first check with +1
+                        # print(point)
+                        potential_int.append(tuple(point))
+                        if tuple(point) not in hull and self.is_convex(potential_int):
+                            if conv:
+                                cover.append(potential_int)
+                            else:
+                                tmp = self.get_src_snk(potential_int)
+                                cover.append((tmp[0], tmp[1]))
+                            # print("append")
+                        # else:
+                            # print("not append")
+                        potential_int = hull.copy()
+                        point[i] = val
+                    # else:
+                        # print("val is max")
+                    if val != 0:
+                        # print("val is not zero")
+                        point[i] = val - 1 # then check with -1
+                        potential_int.append(tuple(point))
+                        if tuple(point) not in hull and self.is_convex(potential_int):
+                            if conv:
+                                cover.append(potential_int)
+                            else:
+                                tmp = self.get_src_snk(potential_int)
+                                cover.append((tmp[0], tmp[1]))
+                            # print("append")
+                        # else:
+                            # print("not append")
+                        potential_int = hull.copy()
+                        point[i] = val
+                    # else:
+                        # print("val is zero")
+                          
+        return cover
+
+
+    def is_convex(self, points):
+        '''
+        Return True if points = int_hull(interval) for some interval, False otherwise. 
+        '''
+        tmp = self.get_src_snk(points)
+        interval = Interval(tmp[0], tmp[1])
+        if set(points) == set(self.int_hull(interval)):
+            return True
+        else:
+            return False
+
+
+    def get_src_snk(self, points):
+        '''
+        From a list of points, which is assumed to be equal to int_hull(interval) for some interval, return (sources, sinks).
+        '''
+        src = []
+        snk = []
+        for pt in points:
+            if self.add_source(pt, points):
+                src.append(pt)
+            if self.add_sink(pt, points):
+                snk.append(pt)
+        return (src, snk)  
+
+
+    def add_source(self, pt, points):
+        '''
+        Attribute that is helpful for constructing get_src_snk.
+        Check if a potential point is a source.
+        '''
+        for other in points:
+            if self.is_smaller(other, pt) and other != pt:
+                return False
+        return True
+    
+
+    def add_sink(self, pt, points):
+        '''
+        Attribute that is helpful for constructing get_src_snk.
+        Check if a potential point is a sink.
+        '''
+        for other in points:
+            if self.is_smaller(pt, other) and other != pt:
+                return False
+        return True
+
+
+    def to_be_removed(self, point, interval):
+        '''
+        Attribute that is helpful for constructing int_hull.
+        Check if a potential point should be removed, in the construction of the convex hull.
+        '''
+        for src in interval.src:
+            if self.is_smaller(point, src) and point != src:
+                return True
+        for snk in interval.snk:
+            if self.is_smaller(snk, point) and point != snk:
+                return True
+        return False
+
 
     def evaluation(self, node1, node2):
         '''
@@ -192,15 +386,15 @@ class Representation:
         for i in range(n):
             for j in range(i+1,n):
                 # first block M_{a_{i,j}, a_i}
-                matrix_N[r:r+self.vecs[self.meet(interval.snk[i], interval.snk[j])], idx_col[i]:idx_col[i+1]] = self.evaluation(self.meet(interval.snk[i], interval.snk[j]), interval.snk[i])
+                matrix_N[r:r+self.vecs[self.meet(interval.snk[i], interval.snk[j])], idx_col[i]:idx_col[i+1]] = self.evaluation(self.meet(interval.snk[i], interval.snk[j]), interval.snk[i]).T
                 # second block -M_{a_{i,j}, a_j}
-                matrix_N[r:r+self.vecs[self.meet(interval.snk[i], interval.snk[j])], idx_col[j]:idx_col[j+1]] = -self.evaluation(self.meet(interval.snk[i], interval.snk[j]), interval.snk[j])
+                matrix_N[r:r+self.vecs[self.meet(interval.snk[i], interval.snk[j])], idx_col[j]:idx_col[j+1]] = -self.evaluation(self.meet(interval.snk[i], interval.snk[j]), interval.snk[j]).T
                 r += self.vecs[self.meet(interval.snk[i], interval.snk[j])]
         
         return matrix_N.T
     
 
-    def interval_rank(self, interval):
+    def int_rank(self, interval):
         '''
         Given an interval, compute the interval rank.
         '''
@@ -226,6 +420,31 @@ class Representation:
             return np.linalg.matrix_rank(block) - np.linalg.matrix_rank(N)
         else:
             return np.linalg.matrix_rank(block) - np.linalg.matrix_rank(M) - np.linalg.matrix_rank(N)
+
+
+    def int_replacement(self, interval):
+        '''
+        Return the interval replacement of an interval. Uses the formula with the cover of the interval.
+        '''
+        repl = self.int_rank(interval) # corresponds to the empty set in the sum
+        cov_ps = powerset(self.cover(interval))
+
+        # compute V S
+        for c in cov_ps[1::]:
+            if len(c) == 1:
+                tmp = self.get_src_snk(c[0])
+                interval = Interval(tmp[0], tmp[1])
+                repl = repl - self.int_rank(interval)
+            if len(c) > 1:
+                eps = len(c)
+                c = [list(set(flatten(c)))]
+                tmp = self.get_src_snk(c[0])
+                interval = Interval(tmp[0], tmp[1])
+                if eps %2 == 0:
+                    repl = repl + self.int_rank(interval)
+                else:
+                    repl = repl - self.int_rank(interval)
+        return repl
 
 
     def check_commutativity(self):
