@@ -3,4 +3,3 @@ Algorithm to compute interval ranks using the formula in [cite our formula here]
 
 TO DO:
 - implement rank computation in finite fields
-- implement a display function for intervals
