@@ -11,10 +11,10 @@ def powerset(elements):
         all_subsets.extend(combinations(elements, subset_size))
     return [list(subset) for subset in all_subsets]
 
-# https://stackoverflow.com/questions/952914/how-do-i-make-a-flat-list-out-of-a-list-of-lists
+
 def flatten(xss):
     '''
-    Used to flatten a list.
+    Flatten a list.
     '''
     return [x for xs in xss for x in xs]
 
@@ -29,6 +29,9 @@ class Interval:
 
 
 class Representation:
+    '''
+    Define a class for quiver representations.
+    '''
     def __init__(self, dimensions):
         self.dimensions = dimensions # dimensions of the grid, ex: [2,3] for a 2D grid with 2 rows and 3 columns
         self.nodes = self.generate_nodes() # nodes are tuples
@@ -65,21 +68,37 @@ class Representation:
         return edges
     
 
-    def create_vecs(self, node, m): # node is the vector space k^m
+    def create_vecs(self, node, m):
+        '''
+        Input:
+        - node
+        - integer m
+        Associate to node the integer m.
+        This means that vertex "node" is associated to the vector space k^m.
+        '''
         if node in self.nodes:
             self.vecs[node] = m
         else:
             print("Error: Trying to access a node which is not in the grid.")
 
 
-    def create_matrix(self, node1, node2, matrix): # create a matrix from node1 to node2
+    def create_matrix(self, node1, node2, matrix):
+        '''
+        Input:
+        - node1
+        - node2
+        - matrix
+        Associate to the edge between node1 and node2 a matrix.
+        This means that the  edge ("node1", "node2") is associated to a linear map represented by "matrix"
+        '''
         if (node1, node2) in self.edges:
             if matrix is None:
                  self.mats[(node1, node2)] = matrix
             else:
                 u = self.vecs.get(node1)
                 v = self.vecs.get(node2)
-                if u is not None and v is not None and matrix.shape == (v, u): # check if the dimensions of the matrix match the vector spaces of the nodes
+                # check if the dimensions of the matrix match the vector spaces of the nodes
+                if u is not None and v is not None and matrix.shape == (v, u): 
                     self.mats[(node1, node2)] = matrix
                 else:
                     print("Error: Matrix dimensions do not match the vector spaces of the nodes.", end="\n")
@@ -464,8 +483,6 @@ class Representation:
                 else:
                     tmp = self.get_src_snk(c)
                     list_int.append(Interval(tmp[0], tmp[1]))
-                    if tmp[0] == [(1,2),(2,0)] and tmp[1] == [(1,2),(2,1)]:
-                        print(f'candidate = {c}')
         return list_int
     
     def is_connected(self, points):
@@ -490,13 +507,6 @@ class Representation:
 
         # check if all points are visited
         return all(node in visited for node in points)
- 
-
-    def check_commutativity(self):
-        '''
-        Check if all commutativity relations hold. To be implemented.
-        '''
-        return True
 
 
     def elements(self):
@@ -600,13 +610,54 @@ class Representation:
             print(f"Error: The vizualization is only available for 1D or 2D grids, but the grid has dimension {len(self.dimensions)}.")
 
         elif len(self.dimensions) == 2:
-            pass # to be completed
+            hull = self.int_hull(interval)
+            for i in range(self.dimensions[0]):
+                for j in range(self.dimensions[1]):
+                    if j != self.dimensions[1] - 1:
+                        if (i,j) in hull and (i,j+1) in hull:
+                            print(f"X -------> ", end="")
+                        elif (i,j) in hull and (i,j+1) not in hull:
+                            print(f"X          ", end="")
+                        else: 
+                            print(f".          ", end="")
+                    else:
+                        if (i,j) in hull:
+                            print("X", end="")
+                        else:
+                            print(".", end="")
+                print()
+                if i != self.dimensions[0] - 1:
+                    for j in range(self.dimensions[1]):
+                        if (i,j) in hull and (i+1,j) in hull:
+                            print("|          ", end="")
+                        else:
+                            print("           ", end="")
+                    print()
+                    for j in range(self.dimensions[1]):
+                        if (i,j) in hull and (i+1,j) in hull:
+                            print("|          ", end="")
+                        else:
+                            print("           ", end="")
+                    print()
+                    for j in range(self.dimensions[1]):
+                        if (i,j) in hull and (i+1,j) in hull:
+                            print("v          ", end="")
+                        else:
+                            print("           ", end="")
+                    print()
 
-        elif len(self.dimensions) == 1: # the interval has 1 source and 1 sink 
-            for j in range(self.dimensions[0]):
-                if j >= interval.src[0][0] and j < interval.snk[0][0]:
-                    print(". -------> ", end="")
+        elif len(self.dimensions) == 1:
+            hull = self.int_hull(interval)
+            for j in range(self.dimensions[0] - 1):
+                if (j,) in hull and ((j+1,)) in hull:
+                    print("X -------> ", end="")
+                elif (j,) in hull and ((j+1,)) not in hull:
+                    print("X          ", end="")
                 else:
                     print(".          ", end="")
+            else:
+                if (j,) in hull:
+                    print("X", end="")
+                else:
+                    print(".", end="")
             print()
-
