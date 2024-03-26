@@ -11,7 +11,7 @@ In topological data analysis, the usual pipeline is the following:
 4. **Algebraic signature of M (obtained by a choice of algebraic descriptor)**
 5. Vector that can be used in machine learning tasks (obtained by a choice of vectorization)
 
-Tasks 1 to 3 should be straightforward to implement. This github repository focuses on **task 4**. Given a persistence module, the code computes its interval replacement, used as an algebraic descriptor. This choice of descriptor is motivated by **[1]**: the interval replacement preserves the so-called interval ranks, which generalize the rank invariant property of other algebraic descriptors. Task 5 is still an open problem for the interval replacement.
+Tasks 1 to 3 should be straightforward to implement thanks to existing code on other  github repositories. This github repository focuses on **task 4**. Given a persistence module, the code computes its interval replacement, used as an algebraic descriptor. This choice of descriptor is motivated by **[1]**: the interval replacement preserves the so-called interval ranks, which generalize the rank invariant property of other algebraic descriptors. Task 5 is still an open problem for the interval replacement.
 
 ## Overview
 
