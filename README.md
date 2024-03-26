@@ -23,7 +23,7 @@ In this repository, you will find:
 
 In the notebook, you will find how to:
 - **Instantiate a d-dimensional grid** which is the quiver considered here. This is done within the class `Representation`. 
-- **Define a representation (persistence module) M** by adding vector spaces and linear maps to the quiver.
+- **Define a representation (persistence module)** by adding vector spaces and linear maps to the quiver.
 - **Define intervals** of the quiver with the class `Interval`. By default, intervals are defined by a list of sources and a list of sinks. One can access all points within the interval using `int_hull`. Conversely, given a list of points forming a connected and convex set, one can define an `Interval` instance by using `get_src_snk`.
 - **Obtain the list of all intervals** thanks to `list_int`.
 - **Compute the interval rank** of a given interval. It is computed with the formula from **[1]** via rank computation of linear maps.
