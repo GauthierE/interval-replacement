@@ -7,7 +7,11 @@ We provide a code implementation for computing interval replacements of persiste
 ## Background
 
 In topological data analysis, the pipeline is the following:
-Geometric data --[Filtration]--> Filtered simplicial complexes --[Homology]--> Persistence module M --[Algebraic descriptor]--> Algebraic signature of M --[Vectorization]--> Vector that can be used in machine learning tasks
+1. Geometric data
+2. Filtered simplicial complexes (obtained by a choice of filtration)
+3. Persistence module M (obtained by a choice of homology functor)
+4. Algebraic signature of M (obtained by a choice of algebraic descriptor)
+5. Vector that can be used in machine learning tasks (obtained by a choice of vectorization)
 
 ## Overview
 
