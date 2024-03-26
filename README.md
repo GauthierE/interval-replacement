@@ -2,8 +2,6 @@
 
 We provide a code implementation for computing interval replacements of persistence modules **[1]**. Interval replacements are computed using Möbius inversion of interval ranks, also called compression multiplicities **[2]**. Interval ranks are computed with the formula provided in **[1]** via rank computation of linear maps. 
 
-## Table of contents
-
 ## Background
 
 In topological data analysis, the pipeline is the following:
@@ -33,9 +31,20 @@ In the notebook, you will find how to:
 
 Additionally, we provide some **visualization** features for the quiver and its intervals.
 
-# Installation
+## Installation
+
+This implementation is built from scratch and does not depend on any external Python libraries, except NumPy and IPython for visualization purpose in the tutorial. You can install them with `pip` by running the following commands:
+```
+pip install numpy
+```
+and 
+```
+pip install numpy
+```
 
 ## Usage
+
+This code is distributed in the hope that it will be useful. It might be integrated into a topological data analysis pipeline to provide algebraic descriptors from data directly. 
 
 ## Future features
 
