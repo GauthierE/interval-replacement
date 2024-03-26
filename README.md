@@ -20,4 +20,5 @@ TO DO:
 ## References
 
 **[1]**: Asashiba, H., Gauthier, E., & Liu, E. _Interval Replacements of Persistence Modules._ arXiv preprint [arXiv:2403.08308](https://arxiv.org/abs/2403.08308) (2024). 
+
 **[2]**: Asashiba, H., Escolar, E. G., Nakashima, K., & Yoshiwaki, M. _On Approximation of 2D Persistence Modules by Interval-decomposables._ Journal of Computational Algebra, Volumes 6–7, 2023, 100007, ISSN 2772-8277, [https://doi.org/10.1016/j.jaca.2023.100007](https://doi.org/10.1016/j.jaca.2023.100007).
