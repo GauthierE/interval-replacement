@@ -4,7 +4,7 @@ We provide a code implementation for computing interval replacements of persiste
 
 ## Background
 
-In topological data analysis, the pipeline is the following:
+In topological data analysis, the usual pipeline is the following:
 1. Geometric data
 2. Filtered simplicial complexes (obtained by a choice of filtration)
 3. Persistence module M (obtained by a choice of homology functor)
