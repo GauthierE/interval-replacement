@@ -48,7 +48,7 @@ This code is distributed in the hope that it will be useful. It might be integra
 
 ## Future features
 
-- [ ] The interval rank computation relies on rank computation of linear maps. This computation is by default implemented in $\mathbbR$ => implement rank computation in finite fields
+- [ ] The interval rank computation relies on rank computation of linear maps. This computation is by default implemented in $\mathbb{R}$ => implement rank computation in finite fields
 - [ ] The interval rank formula holds for compression systems with essential covering property => implement interval rank computation for other compression systems, like the _source-sink_ assignment
 
 ## References
