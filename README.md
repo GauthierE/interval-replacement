@@ -41,7 +41,7 @@ pip install numpy
 ```
 and 
 ```
-pip install numpy
+pip install ipython
 ```
 
 ## Usage
