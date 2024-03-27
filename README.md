@@ -59,3 +59,7 @@ This code is distributed in the hope that it will be useful. It might be integra
 **[1]**: Asashiba, H., Gauthier, E., & Liu, E. _Interval Replacements of Persistence Modules._ arXiv preprint [arXiv:2403.08308](https://arxiv.org/abs/2403.08308) (2024). 
 
 **[2]**: Asashiba, H., Escolar, E. G., Nakashima, K., & Yoshiwaki, M. _On Approximation of 2D Persistence Modules by Interval-decomposables._ Journal of Computational Algebra, Volumes 6–7, 2023, 100007, ISSN 2772-8277, [https://doi.org/10.1016/j.jaca.2023.100007](https://doi.org/10.1016/j.jaca.2023.100007).
+
+**[3]**: Kim, W., & Mémoli, F. *Generalized persistence diagrams for persistence modules over posets*. J Appl. and Comput. Topology 5, 533–581 (2021). [https://doi.org/10.1007/s41468-021-00075-1](https://doi.org/10.1007/s41468-021-00075-1).
+
+**[4]**: Asashiba, H., Buchet, M., Escolar, E. G., Nakashima, K., & Yoshiwaki, M. *On interval decomposability of 2D persistence modules*, Computational Geometry, Volumes 105–106, 2022, 101879, ISSN 0925-7721, [https://doi.org/10.1016/j.comgeo.2022.101879](https://doi.org/10.1016/j.comgeo.2022.101879).
