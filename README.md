@@ -16,8 +16,9 @@ Tasks 1 to 3 should be straightforward to implement thanks to existing code on o
 ## Overview
 
 In this repository, you will find:
-- A tutorial notebook, in which we explain how to compute interval replacements, interval ranks, and other features. 
-- A **.py** file containing all the necessary code implementations used in the notebook.
+- a **tutorial** notebook, in which we explain how to compute interval replacements, interval ranks, and other features ;
+- a **utils.py** file containing all the necessary code implementations used in the notebook ;
+-  and also a **display.py** file containing some useful functions to visualize representations in 1D or 2D settings.
 
 ## Key features
 
