@@ -1,8 +1,11 @@
+# some functions used for visualizing representations and intervals in 1D and 2D settings
+
 from utils import Representation, Interval
 
 def display_rep(rep):
         """
-        - Input: representation
+        Input:
+        - Representation rep
         Display the grid with vector space dimensions for each node, 
         and arrows between each pair of adjacent nodes iff there is a matrix between these two nodes.
         """
