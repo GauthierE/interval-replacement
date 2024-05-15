@@ -417,6 +417,17 @@ class Representation:
         '''
         Given an interval, compute the interval rank.
         '''
+
+        # first find a_1 and b_1 such that a_1 <= b_1
+        for k in range(len(interval.src)):
+            for l in range(len(interval.snk)):
+                if self.is_smaller(interval.src[k],interval.snk[l]):
+                    new_src = interval.src.copy()
+                    new_src[0], new_src[k] = new_src[k], new_src[0]
+                    new_snk = interval.snk.copy()
+                    new_snk[0], new_snk[l] = new_snk[l], new_snk[0]
+        interval = Interval(new_src, new_snk)
+
         M = self.matrix_M(interval)
         N = self.matrix_N(interval)
         mat = self.evaluation(interval.src[0],interval.snk[0])
@@ -452,17 +463,17 @@ class Representation:
         for c in cov_ps[1::]: # remove empty set
             if len(c) == 1:
                 tmp = self.get_src_snk(c[0])
-                interval = Interval(tmp[0], tmp[1])
-                repl = repl - self.int_rank(interval)
+                i = Interval(tmp[0], tmp[1])
+                repl = repl - self.int_rank(i)
             if len(c) > 1:
                 eps = len(c)
-                c = [list(set(flatten(c)))]
-                tmp = self.get_src_snk(c[0])
-                interval = Interval(tmp[0], tmp[1])
+                c_flat = [list(set(flatten(c)))]
+                tmp = self.get_src_snk(c_flat[0])
+                i2 = Interval(tmp[0], tmp[1])
                 if eps %2 == 0:
-                    repl = repl + self.int_rank(interval)
+                    repl = repl + self.int_rank(i2)
                 else:
-                    repl = repl - self.int_rank(interval)
+                    repl = repl - self.int_rank(i2)
         return repl
     
 
