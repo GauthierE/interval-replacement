@@ -47,7 +47,9 @@ class Representation:
         return nodes
 
 
-    def generate_coordinates(self, current_dim=0, current_coords=[]):
+    def generate_coordinates(self, current_dim=0, current_coords=None):
+        if current_coords is None:
+            current_coords = []
         if current_dim == len(self.dimensions):
             return [tuple(current_coords)]
 
