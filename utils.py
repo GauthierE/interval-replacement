@@ -355,70 +355,53 @@ class Representation:
         return mat
     
 
+    def construct_matrix_MN(self, column_labels, block_signature, dual = False):
+        '''
+        Construct a matrix according to the block_signature: a list with elements [row, [col1, col2]].
+        For each we add a block row with M_{col1, row} and -M_{col2, row}. The parameter column_labels
+        determines the order of the column blocks.
+        If dual is True, we add M_{row, col1}^T and -M_{row, col2}^T, and return transpose.
+        '''
+        col_num = sum(self.vecs[node] for node in column_labels)
+        row_num = sum(self.vecs[node] for node, _ in block_signature)
+
+        idx_col = {}  # column indices where each block should start and end
+        start = 0
+        for node in column_labels:
+            idx_col[node] = (start, start + self.vecs[node])
+            start = idx_col[node][1]
+
+        matrix = np.zeros((row_num, col_num))
+        r_current, r_next = 0, 0  # current row
+
+        for row, columns in block_signature:
+            r_next = r_current + self.vecs[row]
+            for i, col in enumerate(columns):
+                block = self.evaluation(col, row) if not dual else self.evaluation(row, col).T
+                matrix[r_current : r_next, idx_col[col][0] : idx_col[col][1]] = (-1)**i * block
+            r_current = r_next
+
+        return matrix if not dual else matrix.T
+
+
     def construct_matrix_M_tot(self, interval):
-        '''
-        Given an interval with n sources, return the matrix_M.
-        '''
-        n = len(interval.src)
-        N = sum(self.vecs[src] for src in interval.src)  # compute number of columns in matrix_M
-        M = sum(self.vecs[self.join(src1, src2)]  # compute number of rows in matrix_M
-                for i, src1 in enumerate(interval.src)
-                for src2 in interval.src[i + 1 :])
+        '''Given an interval with n sources, return the matrix_M.'''
+        column_labels = interval.src
+        block_signature = []
+        for i, src1 in enumerate(interval.src):
+            for src2 in interval.src[i + 1:]:
+                block_signature.append((self.join(src1, src2), (src1, src2)))
+        return self.construct_matrix_MN(column_labels, block_signature)
 
-        # # FOR INTERVALS WITH 2 SOURCES ONLY - used for debugging
-        # # first block
-        # matrix_M[0:self.vecs[self.join(interval.src[0],interval.src[1])], 0:self.vecs[interval.src[0]]] = self.evaluation(interval.src[0], self.join(interval.src[0], interval.src[1]))
-        # # second block
-        # matrix_M[0:self.vecs[self.join(interval.src[0],interval.src[1])], self.vecs[interval.src[0]]:self.vecs[interval.src[0]]+self.vecs[interval.src[1]]] = -self.evaluation(interval.src[1], self.join(interval.src[0], interval.src[1]))
-        
-        # columns indices, to handle block matrices
-        idx_col = [0]
-        for i in range(n):
-            idx_col.append(self.vecs[interval.src[i]] + idx_col[-1])
-
-        r = 0 # current row
-
-        # construct matrix_M
-        matrix_M = np.zeros((M, N))
-        for i in range(n):
-            for j in range(i+1,n):
-                # first block M_{a_{i,j}, a_i}
-                matrix_M[r:r+self.vecs[self.join(interval.src[i], interval.src[j])], idx_col[i]:idx_col[i+1]] = self.evaluation(interval.src[i], self.join(interval.src[i], interval.src[j]))
-                # second block -M_{a_{i,j}, a_j}
-                matrix_M[r:r+self.vecs[self.join(interval.src[i], interval.src[j])], idx_col[j]:idx_col[j+1]] = -self.evaluation(interval.src[j], self.join(interval.src[i], interval.src[j]))
-                r += self.vecs[self.join(interval.src[i], interval.src[j])]
-        
-        return matrix_M
-    
 
     def construct_matrix_N_tot(self, interval):
-        '''
-        Given an interval with n sinks, return the matrix_N.
-        '''
-        n = len(interval.snk)
-        # We do as in the construction of matrix_N, ie we construct the transpose of matrix_N
-        # We just need to replace joins by meets
-        N = sum(self.vecs[snk] for snk in interval.snk)
-        M = sum(self.vecs[self.meet(snk1, snk2)]
-                for i, snk1 in enumerate(interval.snk)
-                for snk2 in interval.snk[i + 1:])
- 
-        idx_col = [0]
-        for i in range(n):
-            idx_col.append(self.vecs[interval.snk[i]] + idx_col[-1])
-
-        r = 0 
-
-        matrix_N = np.zeros((M, N))
-        for i in range(n):
-            for j in range(i+1,n):
-                # first block M_{a_{i,j}, a_i}
-                matrix_N[r:r+self.vecs[self.meet(interval.snk[i], interval.snk[j])], idx_col[i]:idx_col[i+1]] = self.evaluation(self.meet(interval.snk[i], interval.snk[j]), interval.snk[i]).T
-                # second block -M_{a_{i,j}, a_j}
-                matrix_N[r:r+self.vecs[self.meet(interval.snk[i], interval.snk[j])], idx_col[j]:idx_col[j+1]] = -self.evaluation(self.meet(interval.snk[i], interval.snk[j]), interval.snk[j]).T
-                r += self.vecs[self.meet(interval.snk[i], interval.snk[j])]
-        
-        return matrix_N.T
+        '''Given an interval with n sinks, return the matrix_N.'''
+        column_labels = interval.snk
+        block_signature = []
+        for i, snk1 in enumerate(interval.snk):
+            for snk2 in interval.snk[i + 1:]:
+                block_signature.append((self.meet(snk1, snk2), (snk1, snk2)))
+        return self.construct_matrix_MN(column_labels, block_signature, dual=True)
 
 
     def find_source_sink_indices_with_path(self, interval):
