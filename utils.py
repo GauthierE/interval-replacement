@@ -404,6 +404,28 @@ class Representation:
         return self.construct_matrix_MN(column_labels, block_signature, dual=True)
 
 
+    def construct_matrix_M_ss(self, interval):
+        '''Given an interval with n sources, return the matrix_M with source-sink compression.'''
+        column_labels = interval.src
+        block_signature = []
+        for i, src1 in enumerate(interval.src):
+            for src2 in interval.src[i + 1:]:
+                for bound in self.find_upper_bounds(interval, src1, src2):
+                    block_signature.append((bound, (src1, src2)))
+        return self.construct_matrix_MN(column_labels, block_signature)
+
+
+    def construct_matrix_N_ss(self, interval):
+        '''Given an interval with n sources, return the matrix_N with source-sink compression.'''
+        column_labels = interval.snk
+        block_signature = []
+        for i, snk1 in enumerate(interval.snk):
+            for snk2 in interval.snk[i + 1:]:
+                for bound in self.find_lower_bounds(interval, snk1, snk2):
+                    block_signature.append((bound, (snk1, snk2)))
+        return self.construct_matrix_MN(column_labels, block_signature, dual=True)
+
+
     def find_source_sink_indices_with_path(self, interval):
         '''
         Given an interval, return i, j such that interval.src[i] <= interval.snk[j]
@@ -435,7 +457,9 @@ class Representation:
             N = self.construct_matrix_N_tot(interval)
             mat = self.evaluation(interval.src[0], interval.snk[0])
         elif compression == 'ss':
-            raise NotImplementedError("Source-sink is not yet implemented.")
+            M = self.construct_matrix_M_ss(interval)
+            N = self.construct_matrix_N_ss(interval)
+            mat = self.evaluation(interval.src[0], interval.snk[0])
         else:
             raise ValueError("Compression can only by 'tot' or 'ss'")
 
