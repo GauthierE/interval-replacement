@@ -24,8 +24,8 @@ class Interval:
     Define intervals by their sources and their sinks.
     '''
     def __init__(self, src, snk):
-        self.src = src # list of nodes 
-        self.snk = snk # list of nodes
+        self.src = [tuple(s) for s in src]  # list of nodes
+        self.snk = [tuple(s) for s in snk]  # list of nodes
 
 
 class Representation:
