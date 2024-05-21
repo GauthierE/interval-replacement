@@ -411,7 +411,18 @@ class Representation:
                 r += self.vecs[self.meet(interval.snk[i], interval.snk[j])]
         
         return matrix_N.T
-    
+
+
+    def find_source_sink_indices_with_path(self, interval):
+        '''
+        Given an interval, return i, j such that interval.src[i] <= interval.snk[j]
+        '''
+        for i in range(len(interval.src)):
+            for j in range(len(interval.snk)):
+                if self.is_smaller(interval.src[i], interval.snk[j]):
+                    return i, j
+        raise ValueError("No source -> sink path found in the given interval.")
+
 
     def int_rank(self, interval):
         '''
@@ -419,13 +430,11 @@ class Representation:
         '''
 
         # first find a_1 and b_1 such that a_1 <= b_1
-        for k in range(len(interval.src)):
-            for l in range(len(interval.snk)):
-                if self.is_smaller(interval.src[k],interval.snk[l]):
-                    new_src = interval.src.copy()
-                    new_src[0], new_src[k] = new_src[k], new_src[0]
-                    new_snk = interval.snk.copy()
-                    new_snk[0], new_snk[l] = new_snk[l], new_snk[0]
+        i, j = self.find_source_sink_indices_with_path(interval)
+        new_src = interval.src.copy()
+        new_snk = interval.snk.copy()
+        new_src[0], new_src[i] = new_src[i], new_src[0]
+        new_snk[0], new_snk[j] = new_snk[j], new_snk[0]
         interval = Interval(new_src, new_snk)
 
         M = self.matrix_M(interval)
