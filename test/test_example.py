@@ -56,7 +56,7 @@ class ComplexTest(unittest.TestCase):
 
     def test_matrix_M_type_3_1(self):
         interval = Interval([(2, 0), (1, 1), (0, 2)], [(2, 2)])
-        matrix = self.rep.matrix_M(interval)
+        matrix = self.rep.construct_matrix_M_tot(interval)
         assert (matrix == [[1., 0., -1., -0., 0.],
                            [0., 1., -0., -1., 0.],
                            [1., 0., 0., 0., -0.],
@@ -66,7 +66,7 @@ class ComplexTest(unittest.TestCase):
 
     def test_matrix_N_type_3_1(self):
         interval = Interval([(2, 0), (1, 1), (0, 2)], [(2, 2)])
-        matrix = self.rep.matrix_N(interval)
+        matrix = self.rep.construct_matrix_N_tot(interval)
         assert (matrix == []).all()
 
     def test_interval_rank_type_3_1(self):

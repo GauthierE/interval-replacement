@@ -121,6 +121,20 @@ class Representation:
         Return the meet between two nodes.
         '''
         return tuple(min(coord1, coord2) for coord1, coord2 in zip(node1, node2))
+
+
+    def find_upper_bounds(self, interval, node1, node2):
+        '''
+        Return a list of all sinks of the given interval larger than both given nodes.
+        '''
+        return [snk for snk in interval.snk if self.is_smaller(node1, snk) and self.is_smaller(node2, snk)]
+
+
+    def find_lower_bounds(self, interval, node1, node2):
+        '''
+        Return a list of all sources of the given interval smaller than both given nodes.
+        '''
+        return [src for src in interval.src if self.is_smaller(src, node1) and self.is_smaller(src, node2)]
     
 
     def is_smaller(self, node1, node2):
@@ -341,7 +355,7 @@ class Representation:
         return mat
     
 
-    def matrix_M(self, interval):
+    def construct_matrix_M_tot(self, interval):
         '''
         Given an interval with n sources, return the matrix_M.
         '''
@@ -382,7 +396,7 @@ class Representation:
         return matrix_M
     
 
-    def matrix_N(self, interval):
+    def construct_matrix_N_tot(self, interval):
         '''
         Given an interval with n sinks, return the matrix_N.
         '''
@@ -426,9 +440,11 @@ class Representation:
         raise ValueError("No source -> sink path found in the given interval.")
 
 
-    def int_rank(self, interval):
+    def int_rank(self, interval, compression='tot'):
         '''
         Given an interval, compute the interval rank.
+        Keyword arguments:
+            compression ... choose whether to use 'tot' or 'ss' compression (default: 'tot')
         '''
 
         # first find a_1 and b_1 such that a_1 <= b_1
@@ -439,9 +455,14 @@ class Representation:
         new_snk[0], new_snk[j] = new_snk[j], new_snk[0]
         interval = Interval(new_src, new_snk)
 
-        M = self.matrix_M(interval)
-        N = self.matrix_N(interval)
-        mat = self.evaluation(interval.src[0],interval.snk[0])
+        if compression == 'tot':
+            M = self.construct_matrix_M_tot(interval)
+            N = self.construct_matrix_N_tot(interval)
+            mat = self.evaluation(interval.src[0], interval.snk[0])
+        elif compression == 'ss':
+            raise NotImplementedError("Source-sink is not yet implemented.")
+        else:
+            raise ValueError("Compression can only by 'tot' or 'ss'")
 
         # construct the bottom left block matrix
         C = np.zeros((N.shape[0],M.shape[1]))
@@ -463,11 +484,13 @@ class Representation:
             return np.linalg.matrix_rank(block) - np.linalg.matrix_rank(M) - np.linalg.matrix_rank(N)
 
 
-    def int_replacement(self, interval):
+    def int_replacement(self, interval, compression='tot'):
         '''
         Return the interval replacement of an interval. Uses the formula with the cover of the interval.
+        Keyword arguments:
+            compression ... choose whether to use 'tot' or 'ss' compression (default: 'tot')
         '''
-        repl = self.int_rank(interval) # corresponds to the empty set in the sum
+        repl = self.int_rank(interval, compression=compression) # corresponds to the empty set in the sum
         cov_ps = powerset(self.cover(interval))
 
         # compute V S
@@ -475,16 +498,16 @@ class Representation:
             if len(c) == 1:
                 tmp = self.get_src_snk(c[0])
                 i = Interval(tmp[0], tmp[1])
-                repl = repl - self.int_rank(i)
+                repl = repl - self.int_rank(i, compression=compression)
             if len(c) > 1:
                 eps = len(c)
                 c_flat = [list(set(flatten(c)))]
                 tmp = self.get_src_snk(c_flat[0])
                 i2 = Interval(tmp[0], tmp[1])
                 if eps %2 == 0:
-                    repl = repl + self.int_rank(i2)
+                    repl = repl + self.int_rank(i2, compression=compression)
                 else:
-                    repl = repl - self.int_rank(i2)
+                    repl = repl - self.int_rank(i2, compression=compression)
         return repl
     
 
