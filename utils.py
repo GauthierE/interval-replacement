@@ -360,15 +360,10 @@ class Representation:
         Given an interval with n sources, return the matrix_M.
         '''
         n = len(interval.src)
-        # compute number of columns in matrix_M
-        N = 0
-        for i in range(n):
-            N += self.vecs[interval.src[i]]
-        # compute number of rows in matrix_M
-        M = 0
-        for i in range(n):
-            for j in range(i+1,n):
-                M += self.vecs[self.join(interval.src[i],interval.src[j])]
+        N = sum(self.vecs[src] for src in interval.src)  # compute number of columns in matrix_M
+        M = sum(self.vecs[self.join(src1, src2)]  # compute number of rows in matrix_M
+                for i, src1 in enumerate(interval.src)
+                for src2 in interval.src[i + 1 :])
 
         # # FOR INTERVALS WITH 2 SOURCES ONLY - used for debugging
         # # first block
@@ -403,13 +398,10 @@ class Representation:
         n = len(interval.snk)
         # We do as in the construction of matrix_N, ie we construct the transpose of matrix_N
         # We just need to replace joins by meets
-        N = 0
-        for i in range(n):
-            N += self.vecs[interval.snk[i]]
-        M = 0
-        for i in range(n):
-            for j in range(i+1,n):
-                M += self.vecs[self.meet(interval.snk[i],interval.snk[j])]
+        N = sum(self.vecs[snk] for snk in interval.snk)
+        M = sum(self.vecs[self.meet(snk1, snk2)]
+                for i, snk1 in enumerate(interval.snk)
+                for snk2 in interval.snk[i + 1:])
  
         idx_col = [0]
         for i in range(n):
