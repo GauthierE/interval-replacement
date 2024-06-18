@@ -473,14 +473,11 @@ class Representation:
             ])
         
         # this is for computing the rank in R. Change the field here if needed.
-        if 0 in N.shape and 0 in M.shape: # rectangle
-            return np.linalg.matrix_rank(mat) if 0 not in mat.shape else 0
-        elif 0 in N.shape: # (n,1)-type
-            return np.linalg.matrix_rank(block) - np.linalg.matrix_rank(M)
-        elif 0 in M.shape: # (1,n)-type
-            return np.linalg.matrix_rank(block) - np.linalg.matrix_rank(N)
-        else:
-            return np.linalg.matrix_rank(block) - np.linalg.matrix_rank(M) - np.linalg.matrix_rank(N)
+        M_rank = np.linalg.matrix_rank(M) if 0 not in M.shape else 0
+        N_rank = np.linalg.matrix_rank(N) if 0 not in N.shape else 0
+        block_rank = np.linalg.matrix_rank(block) if 0 not in block.shape else 0
+
+        return block_rank - M_rank - N_rank
 
 
     def int_replacement(self, interval, compression='tot'):
