@@ -34,6 +34,8 @@ In the notebook, you will find how to:
 
 Additionally, we provide some **visualization** features for the quiver and its intervals.
 
+By default "total (tot)" compression system is used. To use "source-sink (ss)" insted, add a `compression` argument: `L.int_replacement(interval, compression='ss')`.
+
 ## Installation
 
 This implementation is built from scratch and does not depend on any external Python libraries, except NumPy and IPython for visualization purpose in the tutorial. You can install them with `pip` by running the following commands:
