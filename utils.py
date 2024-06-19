@@ -24,8 +24,8 @@ class Interval:
     Define intervals by their sources and their sinks.
     '''
     def __init__(self, src, snk):
-        self.src = src # list of nodes 
-        self.snk = snk # list of nodes
+        self.src = [tuple(s) for s in src]  # list of nodes
+        self.snk = [tuple(s) for s in snk]  # list of nodes
 
 
 class Representation:
@@ -47,7 +47,9 @@ class Representation:
         return nodes
 
 
-    def generate_coordinates(self, current_dim=0, current_coords=[]):
+    def generate_coordinates(self, current_dim=0, current_coords=None):
+        if current_coords is None:
+            current_coords = []
         if current_dim == len(self.dimensions):
             return [tuple(current_coords)]
 
@@ -119,6 +121,20 @@ class Representation:
         Return the meet between two nodes.
         '''
         return tuple(min(coord1, coord2) for coord1, coord2 in zip(node1, node2))
+
+
+    def find_upper_bounds(self, interval, node1, node2):
+        '''
+        Return a list of all sinks of the given interval larger than both given nodes.
+        '''
+        return [snk for snk in interval.snk if self.is_smaller(node1, snk) and self.is_smaller(node2, snk)]
+
+
+    def find_lower_bounds(self, interval, node1, node2):
+        '''
+        Return a list of all sources of the given interval smaller than both given nodes.
+        '''
+        return [src for src in interval.src if self.is_smaller(src, node1) and self.is_smaller(src, node2)]
     
 
     def is_smaller(self, node1, node2):
@@ -339,98 +355,113 @@ class Representation:
         return mat
     
 
-    def matrix_M(self, interval):
+    def construct_matrix_MN(self, column_labels, block_signature, dual = False):
         '''
-        Given an interval with n sources, return the matrix_M.
+        Construct a matrix according to the block_signature: a list with elements [row, [col1, col2]].
+        For each we add a block row with M_{col1, row} and -M_{col2, row}. The parameter column_labels
+        determines the order of the column blocks.
+        If dual is True, we add M_{row, col1}^T and -M_{row, col2}^T, and return transpose.
         '''
-        n = len(interval.src)
-        # compute number of columns in matrix_M
-        N = 0
-        for i in range(n):
-            N += self.vecs[interval.src[i]]
-        # compute number of rows in matrix_M
-        M = 0
-        for i in range(n):
-            for j in range(i+1,n):
-                M += self.vecs[self.join(interval.src[i],interval.src[j])]
+        col_num = sum(self.vecs[node] for node in column_labels)
+        row_num = sum(self.vecs[node] for node, _ in block_signature)
 
-        # # FOR INTERVALS WITH 2 SOURCES ONLY - used for debugging
-        # # first block
-        # matrix_M[0:self.vecs[self.join(interval.src[0],interval.src[1])], 0:self.vecs[interval.src[0]]] = self.evaluation(interval.src[0], self.join(interval.src[0], interval.src[1]))
-        # # second block
-        # matrix_M[0:self.vecs[self.join(interval.src[0],interval.src[1])], self.vecs[interval.src[0]]:self.vecs[interval.src[0]]+self.vecs[interval.src[1]]] = -self.evaluation(interval.src[1], self.join(interval.src[0], interval.src[1]))
-        
-        # columns indices, to handle block matrices
-        idx_col = [0]
-        for i in range(n):
-            idx_col.append(self.vecs[interval.src[i]] + idx_col[-1])
+        idx_col = {}  # column indices where each block should start and end
+        start = 0
+        for node in column_labels:
+            idx_col[node] = (start, start + self.vecs[node])
+            start = idx_col[node][1]
 
-        r = 0 # current row
+        matrix = np.zeros((row_num, col_num))
+        r_current, r_next = 0, 0  # current row
 
-        # construct matrix_M
-        matrix_M = np.zeros((M, N))
-        for i in range(n):
-            for j in range(i+1,n):
-                # first block M_{a_{i,j}, a_i}
-                matrix_M[r:r+self.vecs[self.join(interval.src[i], interval.src[j])], idx_col[i]:idx_col[i+1]] = self.evaluation(interval.src[i], self.join(interval.src[i], interval.src[j]))
-                # second block -M_{a_{i,j}, a_j}
-                matrix_M[r:r+self.vecs[self.join(interval.src[i], interval.src[j])], idx_col[j]:idx_col[j+1]] = -self.evaluation(interval.src[j], self.join(interval.src[i], interval.src[j]))
-                r += self.vecs[self.join(interval.src[i], interval.src[j])]
-        
-        return matrix_M
-    
+        for row, columns in block_signature:
+            r_next = r_current + self.vecs[row]
+            for i, col in enumerate(columns):
+                block = self.evaluation(col, row) if not dual else self.evaluation(row, col).T
+                matrix[r_current : r_next, idx_col[col][0] : idx_col[col][1]] = (-1)**i * block
+            r_current = r_next
 
-    def matrix_N(self, interval):
+        return matrix if not dual else matrix.T
+
+
+    def construct_matrix_M_tot(self, interval):
+        '''Given an interval with n sources, return the matrix_M.'''
+        column_labels = interval.src
+        block_signature = []
+        for i, src1 in enumerate(interval.src):
+            for src2 in interval.src[i + 1:]:
+                block_signature.append((self.join(src1, src2), (src1, src2)))
+        return self.construct_matrix_MN(column_labels, block_signature)
+
+
+    def construct_matrix_N_tot(self, interval):
+        '''Given an interval with n sinks, return the matrix_N.'''
+        column_labels = interval.snk
+        block_signature = []
+        for i, snk1 in enumerate(interval.snk):
+            for snk2 in interval.snk[i + 1:]:
+                block_signature.append((self.meet(snk1, snk2), (snk1, snk2)))
+        return self.construct_matrix_MN(column_labels, block_signature, dual=True)
+
+
+    def construct_matrix_M_ss(self, interval):
+        '''Given an interval with n sources, return the matrix_M with source-sink compression.'''
+        column_labels = interval.src
+        block_signature = []
+        for i, src1 in enumerate(interval.src):
+            for src2 in interval.src[i + 1:]:
+                for bound in self.find_upper_bounds(interval, src1, src2):
+                    block_signature.append((bound, (src1, src2)))
+        return self.construct_matrix_MN(column_labels, block_signature)
+
+
+    def construct_matrix_N_ss(self, interval):
+        '''Given an interval with n sources, return the matrix_N with source-sink compression.'''
+        column_labels = interval.snk
+        block_signature = []
+        for i, snk1 in enumerate(interval.snk):
+            for snk2 in interval.snk[i + 1:]:
+                for bound in self.find_lower_bounds(interval, snk1, snk2):
+                    block_signature.append((bound, (snk1, snk2)))
+        return self.construct_matrix_MN(column_labels, block_signature, dual=True)
+
+
+    def find_source_sink_indices_with_path(self, interval):
         '''
-        Given an interval with n sinks, return the matrix_N.
+        Given an interval, return i, j such that interval.src[i] <= interval.snk[j]
         '''
-        n = len(interval.snk)
-        # We do as in the construction of matrix_N, ie we construct the transpose of matrix_N
-        # We just need to replace joins by meets
-        N = 0
-        for i in range(n):
-            N += self.vecs[interval.snk[i]]
-        M = 0
-        for i in range(n):
-            for j in range(i+1,n):
-                M += self.vecs[self.meet(interval.snk[i],interval.snk[j])]
- 
-        idx_col = [0]
-        for i in range(n):
-            idx_col.append(self.vecs[interval.snk[i]] + idx_col[-1])
+        for i in range(len(interval.src)):
+            for j in range(len(interval.snk)):
+                if self.is_smaller(interval.src[i], interval.snk[j]):
+                    return i, j
+        raise ValueError("No source -> sink path found in the given interval.")
 
-        r = 0 
 
-        matrix_N = np.zeros((M, N))
-        for i in range(n):
-            for j in range(i+1,n):
-                # first block M_{a_{i,j}, a_i}
-                matrix_N[r:r+self.vecs[self.meet(interval.snk[i], interval.snk[j])], idx_col[i]:idx_col[i+1]] = self.evaluation(self.meet(interval.snk[i], interval.snk[j]), interval.snk[i]).T
-                # second block -M_{a_{i,j}, a_j}
-                matrix_N[r:r+self.vecs[self.meet(interval.snk[i], interval.snk[j])], idx_col[j]:idx_col[j+1]] = -self.evaluation(self.meet(interval.snk[i], interval.snk[j]), interval.snk[j]).T
-                r += self.vecs[self.meet(interval.snk[i], interval.snk[j])]
-        
-        return matrix_N.T
-    
-
-    def int_rank(self, interval):
+    def int_rank(self, interval, compression='tot'):
         '''
         Given an interval, compute the interval rank.
+        Keyword arguments:
+            compression ... choose whether to use 'tot' or 'ss' compression (default: 'tot')
         '''
 
         # first find a_1 and b_1 such that a_1 <= b_1
-        for k in range(len(interval.src)):
-            for l in range(len(interval.snk)):
-                if self.is_smaller(interval.src[k],interval.snk[l]):
-                    new_src = interval.src.copy()
-                    new_src[0], new_src[k] = new_src[k], new_src[0]
-                    new_snk = interval.snk.copy()
-                    new_snk[0], new_snk[l] = new_snk[l], new_snk[0]
+        i, j = self.find_source_sink_indices_with_path(interval)
+        new_src = interval.src.copy()
+        new_snk = interval.snk.copy()
+        new_src[0], new_src[i] = new_src[i], new_src[0]
+        new_snk[0], new_snk[j] = new_snk[j], new_snk[0]
         interval = Interval(new_src, new_snk)
 
-        M = self.matrix_M(interval)
-        N = self.matrix_N(interval)
-        mat = self.evaluation(interval.src[0],interval.snk[0])
+        if compression == 'tot':
+            M = self.construct_matrix_M_tot(interval)
+            N = self.construct_matrix_N_tot(interval)
+            mat = self.evaluation(interval.src[0], interval.snk[0])
+        elif compression == 'ss':
+            M = self.construct_matrix_M_ss(interval)
+            N = self.construct_matrix_N_ss(interval)
+            mat = self.evaluation(interval.src[0], interval.snk[0])
+        else:
+            raise ValueError("Compression can only by 'tot' or 'ss'")
 
         # construct the bottom left block matrix
         C = np.zeros((N.shape[0],M.shape[1]))
@@ -442,21 +473,20 @@ class Representation:
             ])
         
         # this is for computing the rank in R. Change the field here if needed.
-        if 0 in N.shape and 0 in M.shape: # rectangle
-            return np.linalg.matrix_rank(mat) if 0 not in mat.shape else 0
-        elif 0 in N.shape: # (n,1)-type
-            return np.linalg.matrix_rank(block) - np.linalg.matrix_rank(M)
-        elif 0 in M.shape: # (1,n)-type
-            return np.linalg.matrix_rank(block) - np.linalg.matrix_rank(N)
-        else:
-            return np.linalg.matrix_rank(block) - np.linalg.matrix_rank(M) - np.linalg.matrix_rank(N)
+        M_rank = np.linalg.matrix_rank(M) if 0 not in M.shape else 0
+        N_rank = np.linalg.matrix_rank(N) if 0 not in N.shape else 0
+        block_rank = np.linalg.matrix_rank(block) if 0 not in block.shape else 0
+
+        return block_rank - M_rank - N_rank
 
 
-    def int_replacement(self, interval):
+    def int_replacement(self, interval, compression='tot'):
         '''
         Return the interval replacement of an interval. Uses the formula with the cover of the interval.
+        Keyword arguments:
+            compression ... choose whether to use 'tot' or 'ss' compression (default: 'tot')
         '''
-        repl = self.int_rank(interval) # corresponds to the empty set in the sum
+        repl = self.int_rank(interval, compression=compression) # corresponds to the empty set in the sum
         cov_ps = powerset(self.cover(interval))
 
         # compute V S
@@ -464,16 +494,16 @@ class Representation:
             if len(c) == 1:
                 tmp = self.get_src_snk(c[0])
                 i = Interval(tmp[0], tmp[1])
-                repl = repl - self.int_rank(i)
+                repl = repl - self.int_rank(i, compression=compression)
             if len(c) > 1:
                 eps = len(c)
                 c_flat = [list(set(flatten(c)))]
                 tmp = self.get_src_snk(c_flat[0])
                 i2 = Interval(tmp[0], tmp[1])
                 if eps %2 == 0:
-                    repl = repl + self.int_rank(i2)
+                    repl = repl + self.int_rank(i2, compression=compression)
                 else:
-                    repl = repl - self.int_rank(i2)
+                    repl = repl - self.int_rank(i2, compression=compression)
         return repl
     
 
