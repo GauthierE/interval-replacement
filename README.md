@@ -54,7 +54,6 @@ This code is distributed in the hope that it will be useful. It might be integra
 ## Future features
 
 - [ ] Implementation of rank computation in finite fields
-- [ ] Implementation of interval rank computation for other compression systems, like the _source-sink_ assignment
 
 ## References
 
